@@ -12,12 +12,10 @@ def main():
     # read the rom
     with open(args.path_rom, 'rb') as file:
         lines = file.read()
-        lines = [hex(line) for line in lines] # read in hex
+        lines = [(line) for line in lines] # read in hex
 
     # game title
-    print(lines[:10])
-    for i in range(10):
-        print(lines[i])
+    print([hex(lin) for lin in lines[:10]])
 
     # CPU
     cpu = CPU()
@@ -28,21 +26,13 @@ def main():
     ## Print unique opcodes
     u_opcodes = []
 
-    for i in range(len(lines)//2):
+    for i in range(5):
         cpu.fetch_opcode()    
         u_opcodes.append(cpu.decode_opcode())
         cpu.pc += 2
-    u_opcodes = set(u_opcodes)
-    print(u_opcodes)
-    print(sorted(u_opcodes))
-    print(len(u_opcodes))
 
-    #print(cpu.memory)
-    #print(cpu.fetch_opcode())
-    #print(cpu.decode_opcode())
-    #cpu.pc += 2
-    #print(cpu.fetch_opcode())
-    #print(cpu.decode_opcode())
+    print([bin(i) for i in u_opcodes])
+    print([hex(i) for i in u_opcodes])
 
 
 if __name__ == '__main__':
