@@ -26,14 +26,11 @@ def main():
     ## Print unique opcodes
     u_opcodes = []
 
-    for i in range(5):
+    for i in range(40):
         cpu.fetch_opcode()    
         u_opcodes.append(cpu.decode_opcode())
+        print(cpu.print_status())
         cpu.pc += 2
-
-    print([bin(i) for i in u_opcodes])
-    print([hex(i) for i in u_opcodes])
-
 
 if __name__ == '__main__':
     main()

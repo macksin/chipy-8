@@ -36,6 +36,46 @@ class CPU():
         # Init fontset
         for i, c in enumerate(chip8_fontset):
             self.memory[i] = c
+
+        # operations
+        self.operations_search = {
+            0x0: self.clear,
+            0x1: self.jmp_addr,
+            0x2: self.jmp_sub,
+            0x3: self.skp_if_reg_eq_var,
+            0x4: self.skp_if_reg_neq_var,
+            0x5: self.skp_if_reg_e_reg,
+            0x6: self.store_in_reg,
+            0x7: self.add_vlr_to_reg,
+            0x8: self.logical,
+            0x9: self.skp_reg_ne_reg,
+            0xA: self.store_in_reg_i,
+            0xB: self.jmp_to_nnn_plus_v0,
+            0xC: self.random_number,
+            0xD: self.draw_spr,
+            0xE: self.keys_entry,
+            0xF: self.other_routines
+        }
+
+        # operations
+        self.operations_names = {
+            0x0: 'SYS',
+            0x1: 'JUMP',
+            0x2: 'CALL',
+            0x3: 'SKE',
+            0x4: 'SKNE',
+            0x5: 'SKE',
+            0x6: 'LOAD',
+            0x7: 'ADD',
+            0x8: 'logical - subfuncs',
+            0x9: 'SKNE',
+            0xA: 'LOAD I,',
+            0xB: 'JUMP',
+            0xC: 'RAND',
+            0xD: 'DRAW',
+            0xE: 'keys - subfuncs',
+            0xF: 'other - subfuncs'
+        }
         
 
     def fetch_opcode(self):
@@ -44,4 +84,68 @@ class CPU():
         return self.opcode
 
     def decode_opcode(self):
-        return self.opcode & 0x0fff
+        return (self.opcode & 0xf000) >> 12
+
+    def print_oper(self):
+        operation = self.operations_names[self.decode_opcode()]
+        print("{}".format(operation))
+
+    def print_status(self):
+        pp = "code: {} \tpc: {}/{}\tsp={}".format(\
+            self.operations_names[self.decode_opcode()],
+            self.pc,
+            hex(self.pc),
+            self.sp)
+        return pp
+
+    def operation_search(self):
+        pass
+
+    def clear():
+        pass
+
+    def jmp_addr():
+        
+        pass
+
+    def jmp_sub():
+        pass
+
+    def skp_if_reg_eq_var():
+        pass
+
+    def skp_if_reg_neq_var():
+        pass
+
+    def skp_if_reg_e_reg():
+        pass
+
+    def store_in_reg():
+        pass
+
+    def add_vlr_to_reg():
+        pass
+
+    def logical():
+        pass
+
+    def skp_reg_ne_reg():
+        pass
+
+    def store_in_reg_i():
+        pass
+
+    def jmp_to_nnn_plus_v0():
+        pass
+
+    def random_number():
+        pass
+
+    def draw_spr():
+        pass
+
+    def keys_entry():
+        pass
+
+    def other_routines():
+        pass
