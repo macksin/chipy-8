@@ -45,7 +45,7 @@ class CPU():
             0x3: self.skp_if_reg_eq_var,
             0x4: self.skp_if_reg_neq_var,
             0x5: self.skp_if_reg_e_reg,
-            0x6: self.store_in_reg,
+            0x6: self.load_value,
             0x7: self.add_vlr_to_reg,
             0x8: self.logical,
             0x9: self.skp_reg_ne_reg,
@@ -67,15 +67,18 @@ class CPU():
             0x5: 'SKE',
             0x6: 'LOAD',
             0x7: 'ADD',
-            0x8: 'logical - subfuncs',
+            0x8: 'LOGIC',
             0x9: 'SKNE',
             0xA: 'LOAD I,',
             0xB: 'JUMP',
             0xC: 'RAND',
             0xD: 'DRAW',
-            0xE: 'keys - subfuncs',
-            0xF: 'other - subfuncs'
+            0xE: 'KEYS',
+            0xF: 'OTHERS'
         }
+
+        # implemented operations
+        self.implemented = ['JUMP', 'LOAD']
         
 
     def fetch_opcode(self):
@@ -91,11 +94,15 @@ class CPU():
         print("{}".format(operation))
 
     def print_status(self):
-        pp = "code: {} \tpc: {}/{}\tsp={}".format(\
+        pp = "instr: {} \tcode: {} \tpc: {}/{}\tsp={}".format(\
+            hex(self.opcode),
             self.operations_names[self.decode_opcode()],
             self.pc,
             hex(self.pc),
             self.sp)
+        if self.operations_names[self.decode_opcode()] in self.implemented:
+            self.operations_search[self.decode_opcode()]()
+            
         return pp
 
     def operation_search(self):
@@ -104,9 +111,8 @@ class CPU():
     def clear():
         pass
 
-    def jmp_addr():
-        
-        pass
+    def jmp_addr(self):
+        self.pc = self.opcode & 0x0fff
 
     def jmp_sub():
         pass
@@ -120,8 +126,10 @@ class CPU():
     def skp_if_reg_e_reg():
         pass
 
-    def store_in_reg():
-        pass
+    def load_value(self):
+        memory_location = self.opcode >> 8 & 0x000f
+        value_to_store = self.opcode & 0x00ff
+        self.registers[memory_location] = value_to_store
 
     def add_vlr_to_reg():
         pass
