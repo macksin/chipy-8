@@ -35,14 +35,13 @@ class CPU():
 
         # Init fontset
         for i, c in enumerate(chip8_fontset):
-            self.memory[i] = hex(c)
-
+            self.memory[i] = c
         
 
     def fetch_opcode(self):
-        curr = int(self.memory[self.pc], 16) << 8 | int(self.memory[self.pc+1], 16)
-        self.opcode = hex(curr)
+        curr = self.memory[self.pc] << 8 | self.memory[self.pc+1]
+        self.opcode = curr
         return self.opcode
 
     def decode_opcode(self):
-        return hex(int(self.opcode, 16) & 0x0fff)
+        return self.opcode & 0x0fff
