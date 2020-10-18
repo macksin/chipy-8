@@ -63,17 +63,17 @@ class CPU():
 		# operations
 		self.operations_names = {
 			0x0: 'SYS',
-			0x1: 'JUMP',
+			0x1: 'JUMP1',
 			0x2: 'CALL',
-			0x3: 'SKE',
-			0x4: 'SKNE',
-			0x5: 'SKE',
+			0x3: 'SKE1',
+			0x4: 'SKNE1',
+			0x5: 'SKE2',
 			0x6: 'LOAD',
 			0x7: 'ADD',
 			0x8: 'LOGIC',
-			0x9: 'SKNE',
+			0x9: 'SKNE2',
 			0xA: 'LOAD I',
-			0xB: 'JUMP',
+			0xB: 'JUMP2',
 			0xC: 'RAND',
 			0xD: 'DRAW',
 			0xE: 'KEYS',
@@ -81,7 +81,12 @@ class CPU():
 		}
 
 		# implemented operations
-		self.implemented = ['JUMP', 'LOAD', 'DRAW', 'LOAD I', 'LOGIC', 'ADD', 'SKNE', 'SKE', 'CALL', 'SYS', 'OTHERS']
+		self.implemented = ['SYS', 'JUMP1',
+			'CALL', 'SKE1', 'SKNE1', 'SKE2',
+			'LOAD', 'ADD', 'LOGIC', 'SKNE2',
+			'LOAD I', 'JUMP2', 'RAND', 'DRAW',
+			'KEYS', 'OTHERS'
+		]
 		
 
 	def fetch_opcode(self):
@@ -118,8 +123,8 @@ class CPU():
 		"""Auxiliary functions"""
 		if (self.opcode == 0x00EE):
 			self.pc = self.sp
-			self.stack.pop()
 			try:
+				self.stack.pop()
 				self.pc = self.stack[-1]
 			except:
 				pass
@@ -127,14 +132,14 @@ class CPU():
 			pass
 
 	def jmp_addr(self):
-		self.pc = (self.opcode & 0x0fff) - 2
+		self.pc = (self.opcode & 0x0fff)
 
 	def jmp_sub(self):
 		"""2NNN - Execute subroutine starting at address NNN"""
 		address = self.opcode & 0x0fff
 		self.stack.append(self.pc)
 		self.sp = self.pc
-		self.pc = address - 2
+		self.pc = address
 		if self.verbose > 0:
 			print("JUMP SUB {}".format(hex(address)))
 
@@ -302,19 +307,22 @@ class CPU():
 	# of sprite data starting at the address stored in I 
 	# Set VF to 01 if any set pixels are changed to unset, and 00 otherwise
 	def draw_spr(self):
-		length = self.opcode & 0x000f
-		x_location = (self.opcode & 0x0f00) >> 8
-		y_location = (self.opcode & 0x00f0) >> 4
-		for b in range(length):
-			_byte = self.memory[self.i+b]
-			for bit in [int(i) for i in bin(0xf)[2:]]:
+		
+		length = self.opcode & 0x000F
+		x_loc = (self.opcode & 0x0f00) >> 8
+		y_loc = (self.opcode & 0x00f0) >> 4
+
+		for l in range(length):
+			byte = format(self.memory[self.i+l], '08b')
+
+			for bit in [int(i) for i in byte]:	
 				if bit == 1:
-					self.drawobj.draw.rect(self.screen, self.white, (x_location, y_location, 1, 1))
+					self.drawobj.draw.rect(self.screen, self.white, (x_loc, y_loc, 1, 1))
 				else:
-					self.drawobj.draw.rect(self.screen, self.black, (x_location, y_location, 1, 1))
-				x_location += 1
-			x_location = (self.opcode & 0x0f00) >> 8
-			y_location += 1
+					self.drawobj.draw.rect(self.screen, self.black, (x_loc, y_loc, 1, 1))
+				x_loc += 1
+			x_loc = (self.opcode & 0x0f00) >> 8
+			y_loc += 1
 		
 	def keys_entry():
 		pass
