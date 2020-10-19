@@ -1,4 +1,7 @@
-chip8_fontset = [ 
+import random
+import pygame
+
+chip8_fontset = [
   0xF0, 0x90, 0x90, 0x90, 0xF0, # 0
   0x20, 0x60, 0x20, 0x20, 0x70, # 1
   0xF0, 0x10, 0xF0, 0x80, 0xF0, # 2
@@ -17,9 +20,27 @@ chip8_fontset = [
   0xF0, 0x80, 0xF0, 0x80, 0x80  # F
 ]
 
+KEY_MAPPINGS = {
+	0x0: pygame.K_g,
+	0x1: pygame.K_4,
+	0x2: pygame.K_5,
+	0x3: pygame.K_6,
+	0x4: pygame.K_7,
+	0x5: pygame.K_r,
+	0x6: pygame.K_t,
+	0x7: pygame.K_y,
+	0x8: pygame.K_u,
+	0x9: pygame.K_f,
+	0xA: pygame.K_h,
+	0xB: pygame.K_j,
+	0xC: pygame.K_v,
+	0xD: pygame.K_b,
+	0xE: pygame.K_n,
+	0xF: pygame.K_m,
+}
 
 class CPU():
-	
+
 	def __init__(self, drawobj, screenobj, verbose):
 		self.opcode = 0
 		self.memory = [None] * 4096 # 4096 locations
@@ -81,18 +102,13 @@ class CPU():
 		}
 
 		# implemented operations
-		self.implemented = ['SYS', 'JUMP1',
-			'CALL', 'SKE1', 'SKNE1', 'SKE2',
-			'LOAD', 'ADD', 'LOGIC', 'SKNE2',
-			'LOAD I', 'JUMP2', 'RAND', 'DRAW',
-			'KEYS', 'OTHERS'
-		]
-		
+		self.implemented = self.operations_names.values()
+
 
 	def fetch_opcode(self):
+		# curr = self.memory[self.pc] << 8 | self.memory[self.pc+1] 0xa2cd
 		curr = self.memory[self.pc] << 8 | self.memory[self.pc+1]
 		self.opcode = curr
-		return self.opcode
 
 	def decode_opcode(self):
 		return (self.opcode & 0xf000) >> 12
@@ -116,23 +132,23 @@ class CPU():
 			return -1
 		return pp
 
-	def operation_search(self):
-		pass
-
 	def clear(self):
 		"""Auxiliary functions"""
-		if (self.opcode == 0x00EE):
+		if (self.opcode == 0x00ee):
 			self.pc = self.sp
 			try:
 				self.stack.pop()
 				self.pc = self.stack[-1]
 			except:
 				pass
+		elif (self.opcode == 0x00e0):
+			pass
 		else:
 			pass
 
 	def jmp_addr(self):
-		self.pc = (self.opcode & 0x0fff)
+		"""1NNN - Jump to address NNN"""
+		self.pc = (self.opcode & 0x0fff) - 2
 
 	def jmp_sub(self):
 		"""2NNN - Execute subroutine starting at address NNN"""
@@ -154,7 +170,7 @@ class CPU():
 		if self.verbose > 0:
 			print("SKP {}, {} = {}".format(hex(x), hex(nn), self.registers[x] == nn))
 
-	# 4XNN - Skip the following instruction if the 
+	# 4XNN - Skip the following instruction if the
 	# value of register VX is not equal to NN
 	def skp_if_reg_neq_var(self):
 		x = (self.opcode & 0x0f00) >> 8
@@ -175,11 +191,11 @@ class CPU():
 
 	def load_value(self):
 		"""6XNN - Store number NN in register VX"""
-		mem_location = (self.opcode & 0x0f00) >> 8
+		register = (self.opcode & 0x0f00) >> 8
 		value = self.opcode & 0x00ff
-		self.registers[mem_location] = value
+		self.registers[register] = value
 		if self.verbose > 0:
-			print("LOAD {} TO {}".format(hex(value), hex(mem_location)))
+			print("LOAD {} TO {}".format(hex(value), hex(register)))
 
 	def add_vlr_to_reg(self):
 		"""7XNN - Add the value NN to register VX"""
@@ -189,15 +205,19 @@ class CPU():
 			self.registers[register] = value
 		else:
 			self.registers[register] = (self.registers[register] + value) & 0xff
+			if self.verbose > 0:
+				print("ADD {} TO REG {}".format(hex(value), hex(register)))
 
 	def logical(self):
 		mini_operator = self.opcode & 0x000f
 
-		# to X from Y
+		# 8XY0 - Store the value of register VY in register VX
 		if mini_operator == 0x0:
-			y = self.opcode >> 4 & 0xf
-			x = self.opcode >> 8 & 0xf
+			y = (self.opcode & 0x00f0) >> 4
+			x = (self.opcode & 0x0f00) >> 8
 			self.registers[x] = self.registers[y]
+			if self.verbose > 0:
+				print("STORE REG {} TO REG {}".format(hex(y), hex(x)))
 
 		# 8XY1 - Set VX to VX OR VY
 		elif mini_operator == 0x1:
@@ -219,13 +239,13 @@ class CPU():
 			y = (self.opcode & 0x00f0) >> 4
 			xor_operator = x ^ y
 			self.registers[xor_operator] = self.registers[x]
-			
+
 		# 8XY4 - Add the value of register VY to VX
 		# Set VF to 01 if a carry occurs
 		# Set VF to 00 if a carry does not occur
 		elif mini_operator == 0x4:
-			y = self.opcode >> 4 & 0xf
-			x = self.opcode >> 8 & 0xf
+			y = (self.opcode >> 4) & 0xf
+			x = (self.opcode >> 8) & 0xf
 			_ = self.registers[x] + self.registers[y]
 			if _ > 255:
 				self.registers[x] = 256 - _
@@ -233,6 +253,8 @@ class CPU():
 			else:
 				self.registers[x] = _
 				self.registers[0xF] = 0
+			if self.verbose > 0:
+				print("ADD REG {} TO REG {}".format(hex(y), hex(x)))
 
 		# 8XY - Subtract the value of register VY from register VX
 		# Set VF to 00 if a borrow occurs
@@ -290,24 +312,29 @@ class CPU():
 		if self.verbose > 0:
 			print("SKPN {}, {} = {}".format(hex(x), hex(y), self.registers[x] != self.registers[y]))
 
-
 	def store_in_reg_i(self):
+		"""ANNN - Store memory address NNN in register I"""
 		self.i = self.opcode & 0x0fff
 
 	def jmp_to_nnn_plus_v0(self):
 		"""BNNN - Jump to address NNN + V0"""
 		jumpto = self.opcode & 0x0fff
 		self.pc = (jumpto + self.registers[0])
-		
 
-	def random_number():
-		pass
 
-	# DXYN - Draw a sprite at position VX, VY with N bytes 
-	# of sprite data starting at the address stored in I 
+	def random_number(self):
+		"""CXNN - Set VX to a random number with a mask of NN"""
+		number = random.randint(0, 255)
+		x = (self.opcode & 0x0f00) >> 8
+		self.registers[x] = number
+		if self.verbose > 0:
+			print("RANDOM {} TO REG {}".format(hex(number), hex(x)))
+
+	# DXYN - Draw a sprite at position VX, VY with N bytes
+	# of sprite data starting at the address stored in I
 	# Set VF to 01 if any set pixels are changed to unset, and 00 otherwise
 	def draw_spr(self):
-		
+
 		length = self.opcode & 0x000F
 		x_loc = (self.opcode & 0x0f00) >> 8
 		y_loc = (self.opcode & 0x00f0) >> 4
@@ -315,7 +342,7 @@ class CPU():
 		for l in range(length):
 			byte = format(self.memory[self.i+l], '08b')
 
-			for bit in [int(i) for i in byte]:	
+			for bit in [int(i) for i in byte]:
 				if bit == 1:
 					self.drawobj.draw.rect(self.screen, self.white, (x_loc, y_loc, 1, 1))
 				else:
@@ -323,17 +350,17 @@ class CPU():
 				x_loc += 1
 			x_loc = (self.opcode & 0x0f00) >> 8
 			y_loc += 1
-		
-	def keys_entry():
+
+	def keys_entry(self):
 		pass
-	
+
 	def other_routines(self):
 		subroutine = self.opcode & 0x00ff
 		# FX29 - I to the memory address to the hexadecimal digit in VX
 		if subroutine == 0x29:
 			number = (self.opcode & 0x0f00) >> 8
 			self.i = number * 5
-		# FX33 Store binary coded decimal 
+		# FX33 Store binary coded decimal
 		elif subroutine == 0x33:
 			x = (self.opcode & 0x0f00) >> 8
 			d1 = int(self.registers[x] / 100)
@@ -344,3 +371,14 @@ class CPU():
 			self.memory[self.i+2] = d3
 		else:
 			pass
+
+	def keyboard(self):
+		key_addr = (self.opcode & 0x0f00) >> 8
+		instruction =  (self.opcode & 0x00ff)
+		if instruction == 0x9e:
+			# Skip the following instruction if the key corresponding to the hex value currently stored in register VX is pressed
+			if KEY_MAPPINGS[key_addr]:
+				self.pc += 2
+		elif instruction == 0xa1:
+			if not KEY_MAPPINGS[key_addr]:
+				self.registers['pc'] += 2
